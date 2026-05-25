@@ -1,0 +1,89 @@
+services:
+  - type: web
+    name: n8n-automation
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter        # $7/month — required for always-on (free tier sleeps and breaks webhooks)
+    healthCheckPath: /healthz
+
+    # Persistent disk: stores workflow files and binary data (e.g. invoice PDFs)
+    disk:
+      name: n8n-files
+      mountPath: /home/node/.n8n
+      sizeGB: 1          # $0.25/GB/month — 1 GB is plenty to start
+
+    envVars:
+      # ── n8n core ──────────────────────────────────────────────────────────
+      - key: N8N_PORT
+        value: "5678"
+      - key: N8N_PROTOCOL
+        value: https
+      - key: N8N_HOST
+        sync: false      # Set this to your Render URL after first deploy, e.g. n8n-automation.onrender.com
+      - key: WEBHOOK_URL
+        sync: false      # Set to https://<your-render-url>  (same host, full URL)
+      - key: N8N_ENCRYPTION_KEY
+        sync: false      # CRITICAL: generate once with: openssl rand -hex 32  — never change after first deploy
+
+      # ── Database (auto-filled from the Postgres service below) ────────────
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        fromDatabase:
+          name: n8n-db
+          property: host
+      - key: DB_POSTGRESDB_PORT
+        fromDatabase:
+          name: n8n-db
+          property: port
+      - key: DB_POSTGRESDB_DATABASE
+        fromDatabase:
+          name: n8n-db
+          property: database
+      - key: DB_POSTGRESDB_USER
+        fromDatabase:
+          name: n8n-db
+          property: user
+      - key: DB_POSTGRESDB_PASSWORD
+        fromDatabase:
+          name: n8n-db
+          property: password
+      - key: DB_POSTGRESDB_SSL
+        value: "true"
+
+      # ── Timezone (UK) ────────────────────────────────────────────────────
+      - key: GENERIC_TIMEZONE
+        value: Europe/London
+      - key: TZ
+        value: Europe/London
+
+      # ── Execution settings ────────────────────────────────────────────────
+      - key: EXECUTIONS_MODE
+        value: regular
+      - key: EXECUTIONS_DATA_PRUNE
+        value: "true"
+      - key: EXECUTIONS_DATA_MAX_AGE
+        value: "720"     # Keep 30 days of execution history (hours)
+      - key: EXECUTIONS_DATA_SAVE_ON_ERROR
+        value: all
+      - key: EXECUTIONS_DATA_SAVE_ON_SUCCESS
+        value: none      # Change to "all" if you want to keep successful run logs
+
+      # ── Binary data (invoice PDFs, email attachments) ─────────────────────
+      - key: N8N_BINARY_DATA_MODE
+        value: filesystem  # Stored on the persistent disk above
+
+      # ── Misc ─────────────────────────────────────────────────────────────
+      - key: NODE_ENV
+        value: production
+      - key: N8N_DIAGNOSTICS_ENABLED
+        value: "false"
+      - key: N8N_HIRING_BANNER_ENABLED
+        value: "false"
+
+databases:
+  - name: n8n-db
+    databaseName: n8n
+    user: n8n
+    plan: starter        # $7/month — free Postgres expires after 90 days, not suitable for production
