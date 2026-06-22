@@ -4,6 +4,7 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerContext: .
+    region: frankfurt     # EU region — must match the database region
     plan: starter        # $7/month — required for always-on (free tier sleeps and breaks webhooks)
     healthCheckPath: /healthz
 
