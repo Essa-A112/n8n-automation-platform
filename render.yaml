@@ -86,4 +86,5 @@ databases:
   - name: n8n-db
     databaseName: n8n
     user: n8n
-    plan: starter        # $7/month — free Postgres expires after 90 days, not suitable for production
+    plan: free
+    region: frankfurt
