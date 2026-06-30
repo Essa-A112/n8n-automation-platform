@@ -1,0 +1,11 @@
+title = "gitleaks config"
+
+[[allowlists]]
+description = "Allow Render YAML env var key/value syntax false positive"
+paths = [
+  '''render\.yaml'''
+]
+regexes = [
+  '''EXECUTIONS_DATA_SAVE_ON_ERROR''',
+  '''value:\s*all'''
+]
